@@ -113,6 +113,10 @@ cp -R $build/* $p
 
 unset GIT_DIR # unset git dir or it will mess with goinstall
 cd $p
+
+# Experimental pre_compile hook.
+source $buildpack/bin/steps/hooks/pre_compile
+
 if test -e $build/Godeps
 then
     echo "-----> Running: godep go install -tags heroku ./..."
@@ -121,6 +125,9 @@ else
     echo "-----> Running: go get -tags heroku ./..."
     go get -tags heroku ./...
 fi
+
+# Experimental post_compile hook.
+source $buildpack/bin/steps/hooks/post_compile
 
 rm -rf $build/.heroku
 
