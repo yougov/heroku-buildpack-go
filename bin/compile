@@ -104,6 +104,7 @@ else
     go get -tags heroku ./...
 fi
 
+cd $build
 source $bindir/steps/hooks/post_compile
 
 rm -rf $build/.heroku
