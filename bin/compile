@@ -22,6 +22,7 @@ mkdir -p "$1" "$2"
 build=$(cd "$1/" && pwd)
 cache=$(cd "$2/" && pwd)
 buildpack=$(dirname $(dirname $0))
+bindir=$(cd $(dirname $0); pwd)
 arch=$(uname -m|tr A-Z a-z)
 if test $arch = x86_64
 then arch=amd64
@@ -92,8 +93,7 @@ rsync -ax --exclude '.git/' --exclude '.hg/' $build $p
 unset GIT_DIR # unset git dir or it will mess with goinstall
 cd $p
 
-# Experimental pre_compile hook.
-source $buildpack/bin/steps/hooks/pre_compile
+source $bindir/steps/hooks/pre_compile
 
 if test -e $build/Godeps
 then
@@ -104,8 +104,7 @@ else
     go get -tags heroku ./...
 fi
 
-# Experimental post_compile hook.
-source $buildpack/bin/steps/hooks/post_compile
+source $bindir/steps/hooks/post_compile
 
 rm -rf $build/.heroku
 
