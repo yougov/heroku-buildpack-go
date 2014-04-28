@@ -19,10 +19,14 @@ platext() {
 }
 
 mkdir -p "$1" "$2"
-build=$(cd "$1/" && pwd)
-cache=$(cd "$2/" && pwd)
-buildpack=$(dirname $(dirname $0))
-bindir=$(cd $(dirname $0); pwd)
+
+BUILDPACK_DIR=$(dirname $(dirname $0))
+BUILD_DIR=$(cd "$1/" && pwd)
+CACHE_DIR=$(cd "$2/" && pwd)
+BIN_DIR=$(cd $(dirname $0); pwd)
+
+export BUILD_DIR CACHE_DIR BIN_DIR
+
 arch=$(uname -m|tr A-Z a-z)
 if test $arch = x86_64
 then arch=amd64
@@ -30,26 +34,26 @@ fi
 plat=$(uname|tr A-Z a-z)-$arch
 
 # Python
-venv=$cache/venv
-mkdir -p $cache/pip
+venv=$CACHE_DIR/venv
+mkdir -p $CACHE_DIR/pip
 python=python2.7
-PATH=$buildpack/$plat/bin:$venv/bin:$PATH
+PATH=$BUILDPACK_DIR/$plat/bin:$venv/bin:$PATH
 
 virtualenv() {
-    python "$buildpack/vendor/virtualenv-1.7/virtualenv.py" "$@"
+    python "$BUILDPACK_DIR/vendor/virtualenv-1.7/virtualenv.py" "$@"
 }
 
-if test -f $build/Godeps
+if test -f $BUILD_DIR/Godeps
 then
-    name=$(<$build/Godeps jq -r .ImportPath)
-    ver=$(<$build/Godeps jq -r .GoVersion)
-elif test -d $build/Godeps
+    name=$(<$BUILD_DIR/Godeps jq -r .ImportPath)
+    ver=$(<$BUILD_DIR/Godeps jq -r .GoVersion)
+elif test -d $BUILD_DIR/Godeps
 then
-    name=$(<$build/Godeps/Godeps.json jq -r .ImportPath)
-    ver=$(<$build/Godeps/Godeps.json jq -r .GoVersion)
-elif test -f $build/.godir
+    name=$(<$BUILD_DIR/Godeps/Godeps.json jq -r .ImportPath)
+    ver=$(<$BUILD_DIR/Godeps/Godeps.json jq -r .GoVersion)
+elif test -f $BUILD_DIR/.godir
 then
-    name=$(cat $build/.godir)
+    name=$(cat $BUILD_DIR/.godir)
     ver=go${GOVERSION:-1.2.1}
 else
     echo >&2 " !     A .godir is required. For instructions:"
@@ -60,19 +64,19 @@ fi
 file=${GOFILE:-$ver.$(uname|tr A-Z a-z)-amd64$(platext $ver).tar.gz}
 url=${GOURL:-http://go.googlecode.com/files/$file}
 
-if test -e $build/bin && ! test -d $build/bin
+if test -e $BUILD_DIR/bin && ! test -d $BUILD_DIR/bin
 then
     echo >&2 " !     File bin exists and is not a directory."
     exit 1
 fi
 
-if test -d $cache/$ver/go
+if test -d $CACHE_DIR/$ver/go
 then
     echo "-----> Using $ver"
 else
-    rm -rf $cache/* # be sure not to build up cruft
-    mkdir -p $cache/$ver
-    cd $cache/$ver
+    rm -rf $CACHE_DIR/* # be sure not to BUILD_DIR up cruft
+    mkdir -p $CACHE_DIR/$ver
+    cd $CACHE_DIR/$ver
     echo -n "-----> Installing $ver..."
     curl -sO $url
     tar zxf $file
@@ -80,22 +84,22 @@ else
     echo " done"
 fi
 
-mkdir -p $build/bin
-GOBIN=$build/bin export GOBIN
-GOROOT=$cache/$ver/go export GOROOT
-GOPATH=$build/.heroku/g export GOPATH
+mkdir -p $BUILD_DIR/bin
+GOBIN=$BUILD_DIR/bin export GOBIN
+GOROOT=$CACHE_DIR/$ver/go export GOROOT
+GOPATH=$BUILD_DIR/.heroku/g export GOPATH
 PATH=$GOROOT/bin:$PATH
 
 p=$GOPATH/src/$name
 mkdir -p $p
-cp -R $build/* $p
+cp -R $BUILD_DIR/* $p
 
 unset GIT_DIR # unset git dir or it will mess with goinstall
 cd $p
 
-source $bindir/steps/hooks/pre_compile
+source $BIN_DIR/steps/hooks/pre_compile
 
-if test -e $build/Godeps
+if test -e $BUILD_DIR/Godeps
 then
     echo "-----> Running: godep go install -tags heroku ./..."
     godep go install -tags heroku ./...
@@ -104,10 +108,10 @@ else
     go get -tags heroku ./...
 fi
 
-cd $build
-source $bindir/steps/hooks/post_compile
+cd $BUILD_DIR
+source $BIN_DIR/steps/hooks/post_compile
 
-rm -rf $build/.heroku
+rm -rf $BUILD_DIR/.heroku
 
-mkdir -p $build/.profile.d
-echo 'PATH=$PATH:$HOME/bin' > $build/.profile.d/go.sh
+mkdir -p $BUILD_DIR/.profile.d
+echo 'PATH=$PATH:$HOME/bin' > $BUILD_DIR/.profile.d/go.sh
