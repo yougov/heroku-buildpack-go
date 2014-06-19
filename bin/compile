@@ -67,7 +67,7 @@ else
 fi
 
 file=${GOFILE:-$ver.$(uname|tr A-Z a-z)-amd64$(platext $ver).tar.gz}
-url=${GOURL:-http://go.googlecode.com/files/$file}
+url=${GOURL:-http://golang.org/dl/$file}
 
 if test -e $BUILD_DIR/bin && ! test -d $BUILD_DIR/bin
 then
