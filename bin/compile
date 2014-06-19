@@ -54,7 +54,12 @@ then
 elif test -f $BUILD_DIR/.godir
 then
     name=$(cat $BUILD_DIR/.godir)
-    ver=go${GOVERSION:-1.2.1}
+    if test -f $BUILD_DIR/.gover
+    then
+        ver=go$(cat $BUILD_DIR/.gover)
+    else
+        ver=go${GOVERSION:-1.2.1}
+    fi
 else
     echo >&2 " !     A .godir is required. For instructions:"
     echo >&2 " !     http://mmcgrana.github.io/2012/09/getting-started-with-go-on-heroku"
